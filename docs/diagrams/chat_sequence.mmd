@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant UI as Gradio UI
+    participant C as ChatService
+    participant R as Retriever
+    participant V as Chroma (notebook)
+    participant B as BM25
+    participant X as Cross-encoder
+    participant L as Groq LLM
+    participant S as NotebookStore
+
+    U->>UI: question
+    UI->>C: ask(notebook_id, question, method, k)
+    C->>S: load chat history (follow-up context)
+    C->>R: retrieve(query, method)
+    R->>V: top-20 by cosine similarity
+    R->>B: top-20 by BM25 (hybrid)
+    R->>R: Reciprocal Rank Fusion
+    R->>X: score (question, chunk) pairs (rerank)
+    R-->>C: top-k chunks + scores + timings
+    C->>L: system rules + numbered excerpts [1..k] + question
+    L-->>C: answer with [n] citations
+    C->>C: keep valid [n], map to source · page/slide
+    C->>S: append user + assistant messages (with citations) to history.jsonl
+    C-->>UI: answer + Sources list + retrieved chunks panel

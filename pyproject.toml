@@ -1,0 +1,10 @@
+[project]
+name = "notebooklm-clone"
+version = "1.0.0"
+description = "NotebookLM-style research notebooks: multi-format ingestion, RAG chat with citations, artifacts"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning"]

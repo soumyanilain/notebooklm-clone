@@ -1,0 +1,65 @@
+POSTMORTEM: INC-2047 Fleet telemetry outage (us-east region)
+Status: Final. Author: Jonas Whitfield, platform on-call engineer. Review date: 2026-08-22.
+Severity: SEV-1 (more than 50 robots affected)
+
+SUMMARY
+
+On 2026-08-14 the telemetry gateway tg-east-2 stopped accepting connections from robots in the us-east
+region. 312 robots (271 HX-7 drones and 41 Talon-3 rovers) lost their connection to the fleet platform
+for 3 hours 42 minutes. Robots that were already flying completed their missions and landed using
+on-board autonomy, as designed. No robot was lost, nobody was hurt, and no customer data was lost, but
+46 scheduled inspections had to be rescheduled.
+
+ROOT CAUSE
+
+The TLS certificate on gateway tg-east-2 expired at 02:00 UTC. The certificate had been issued manually
+in 2025 and was not in the automated renewal system, so nobody received the renewal reminder. Robots
+correctly refused to connect to a gateway presenting an expired certificate.
+
+TIMELINE (all times UTC, 2026-08-14)
+
+02:00  Certificate on tg-east-2 expires. Robots start failing their TLS handshake and retrying.
+02:10  Connection error rate on tg-east-2 passes 90 percent.
+02:25  The "gateway connections dropped" alert fires. The alert only fires after the error rate has
+       stayed high for 15 minutes, which delayed detection.
+02:31  On-call engineer Jonas Whitfield acknowledges the page.
+03:05  Root cause identified after ruling out a network problem.
+03:40  A new certificate is requested; issuance is slow because the manual process needs two approvers.
+05:20  New certificate installed on tg-east-2. Robots begin reconnecting.
+05:42  All 312 robots reconnected. Incident declared resolved.
+
+IMPACT
+
+- 312 robots without telemetry for 3 hours 42 minutes (02:00 to 05:42 UTC).
+- 46 inspections rescheduled across 9 customers.
+- No data loss: robots buffered telemetry locally and uploaded it after reconnecting.
+- Estimated cost: 38,500 US dollars in rescheduled crew time.
+
+WHAT WENT WELL
+
+- On-board autonomy worked: every flying robot landed safely at its planned landing zone.
+- Local telemetry buffering meant no inspection data was lost.
+- The customer success team notified all affected customers within one hour of detection.
+
+WHAT WENT WRONG
+
+- The certificate was outside the automated renewal system.
+- The alert threshold of 15 minutes was too slow for a total outage.
+- There is no automatic failover to the second us-east gateway, tg-east-1.
+- The manual certificate process needs two approvers, one of whom was asleep.
+
+ACTION ITEMS
+
+AI-1  Move all gateway certificates into automated renewal. Owner: Lena Brandt. Due 2026-08-31. Done.
+AI-2  Lower the "gateway connections dropped" alert threshold from 15 minutes to 3 minutes.
+      Owner: Jonas Whitfield. Due 2026-08-21. Done.
+AI-3  Add automatic failover from tg-east-2 to tg-east-1. Owner: Sam Ortiz. Due 2026-10-15. In progress.
+AI-4  Run a quarterly gateway failover drill. Owner: Sam Ortiz. First drill due 2026-11-05.
+AI-5  Add certificate expiry (30 days ahead) to the weekly platform health report. Owner: Lena Brandt.
+      Due 2026-09-05. Done.
+
+LESSONS LEARNED
+
+Manual exceptions to automated systems are where outages hide. Every certificate, key and secret must
+be tracked by the same automation, with no "temporary" manual exceptions. Alerts for total outages
+should fire in minutes, not after a long smoothing window.

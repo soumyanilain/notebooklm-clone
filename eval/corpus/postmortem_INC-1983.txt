@@ -1,0 +1,42 @@
+POSTMORTEM: INC-1983 Talon-3 firmware rollout halted (eu-west region)
+Status: Final. Author: Aiko Tanaka, fleet software lead. Review date: 2026-05-12.
+Severity: SEV-2 (fewer than 50 robots affected)
+
+SUMMARY
+
+On 2026-05-03 firmware release 7.4.0 was rolled out to Talon-3 rovers in the eu-west region. After the
+update, 37 rovers reported false "track slip" warnings and stopped mid-mission. The rollout was halted
+and the rovers were rolled back to firmware 7.3.2. Downtime per rover averaged 2 hours 10 minutes.
+No equipment was damaged and nobody was hurt.
+
+ROOT CAUSE
+
+Release 7.4.0 changed the wheel-encoder sampling rate from 100 Hz to 250 Hz, but the slip-detection
+threshold was not rescaled. On wet concrete the higher sampling rate produced short spikes that crossed
+the old threshold. The staging test site was dry, so the problem was not caught before release.
+
+TIMELINE (all times UTC, 2026-05-03)
+
+08:00  Staged rollout of 7.4.0 begins (25 percent of eu-west Talon-3 fleet).
+08:40  First false "track slip" stop reported by a crew in Rotterdam.
+09:15  Error-budget alert fires after 10 rovers stop within one hour.
+09:20  Rollout paused by on-call engineer Aiko Tanaka.
+10:05  Rollback to 7.3.2 starts.
+11:30  All 37 affected rovers back on 7.3.2 and resuming missions.
+
+IMPACT
+
+- 37 Talon-3 rovers stopped mid-mission; average downtime 2 hours 10 minutes.
+- 12 substation inspections rescheduled across 4 customers.
+- Estimated cost: 9,200 US dollars in rescheduled crew time.
+
+ACTION ITEMS
+
+AI-1  Add a wet-surface test track to the staging site. Owner: Aiko Tanaka. Due 2026-06-15. Done.
+AI-2  Make slip thresholds scale automatically with sampling rate. Owner: Felix Braun. Due 2026-05-31. Done.
+AI-3  Limit the first rollout wave to 10 percent of a region. Owner: Aiko Tanaka. Due 2026-05-20. Done.
+
+LESSONS LEARNED
+
+Test environments must include the conditions robots actually meet in the field, including rain and wet
+floors. Staged rollouts worked: only a quarter of the fleet received the faulty release.

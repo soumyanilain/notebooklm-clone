@@ -1,0 +1,108 @@
+name: Test and deploy to Cloud Run
+
+# Every push to main: run the offline tests, build the Docker image, push it to
+# Artifact Registry, deploy it to Cloud Run and check that the live URL responds.
+# Google credentials come from Workload Identity Federation (no JSON key is stored);
+# the Groq API key lives in Google Secret Manager. See scripts/gcp_setup.sh.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloud-run
+  cancel-in-progress: true
+
+env:
+  REGION: us-central1
+  SERVICE: notebooklm-clone
+  AR_REPO: notebooklm
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests (offline, no API keys needed)
+        run: pytest -q
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write   # lets GitHub prove its identity to Google (Workload Identity Federation)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the Google Cloud secrets are set
+        env:
+          PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+          ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$PROJECT" ] || [ -z "$PROVIDER" ] || [ -z "$ACCOUNT" ]; then
+            echo "::error::Add GCP_PROJECT_ID, GCP_WIF_PROVIDER and GCP_SERVICE_ACCOUNT as repository secrets (printed by scripts/gcp_setup.sh)."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Set image name
+        run: echo "IMAGE=${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${AR_REPO}/${SERVICE}:${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push the image (layers cached between runs)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${SERVICE}" \
+            --image "${IMAGE}" \
+            --region "${REGION}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --service-account "notebooklm-runtime@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --allow-unauthenticated \
+            --port 8080 --memory 2Gi --cpu 1 --cpu-boost \
+            --min-instances 0 --max-instances 1 --concurrency 20 --timeout 600 --session-affinity \
+            --set-secrets "GROQ_API_KEY=GROQ_API_KEY:latest" \
+            --set-env-vars "LOG_LEVEL=INFO" \
+            --quiet
+
+      - name: Check the live app
+        run: |
+          URL=$(gcloud run services describe "${SERVICE}" --region "${REGION}" \
+                --project "${{ secrets.GCP_PROJECT_ID }}" --format='value(status.url)')
+          echo "Live URL: ${URL}"
+          echo "### Deployed to ${URL}" >> "$GITHUB_STEP_SUMMARY"
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${URL}/" || true)
+            if [ "$code" = "200" ]; then echo "App responded with HTTP 200"; exit 0; fi
+            echo "Attempt ${attempt}: HTTP ${code}, retrying in 10 s"; sleep 10
+          done
+          echo "::error::The deployed app did not respond with HTTP 200"
+          exit 1

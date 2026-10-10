@@ -1,0 +1,117 @@
+[
+  {
+    "id": "Q1",
+    "type": "exact term",
+    "question": "Which form is used to report a field incident, and how soon must it be filed?",
+    "reference": "Form OPS-19, the incident report, filed within 24 hours (near-misses use the same form within 72 hours).",
+    "evidence": [
+      "OPS-19",
+      "within 24"
+    ]
+  },
+  {
+    "id": "Q2",
+    "type": "paraphrase",
+    "question": "How long can the inspection drone stay in the air on one battery?",
+    "reference": "Up to 38 minutes in calm conditions; missions should be planned for no more than 30 minutes to keep a reserve.",
+    "evidence": [
+      "38 minutes"
+    ]
+  },
+  {
+    "id": "Q3",
+    "type": "paraphrase",
+    "question": "How much supervised practice does an operator need before reaching the second certification tier?",
+    "reference": "Level L2 requires at least 40 supervised flight hours after L1, plus a practical exam and a first-aid certificate.",
+    "evidence": [
+      "40 supervised flight hours"
+    ]
+  },
+  {
+    "id": "Q4",
+    "type": "exact term",
+    "question": "What was the root cause of INC-2047?",
+    "reference": "The TLS certificate on telemetry gateway tg-east-2 expired at 02:00 UTC. It had been issued manually and was not in the automated renewal system, so robots refused to connect.",
+    "evidence": [
+      "certificate on gateway tg-east-2 expired"
+    ]
+  },
+  {
+    "id": "Q5",
+    "type": "paraphrase + distractor",
+    "question": "Why did it take so long for anyone to notice the telemetry outage?",
+    "reference": "The 'gateway connections dropped' alert only fired after the error rate stayed high for 15 minutes, so it fired at 02:25 even though failures started at 02:00.",
+    "evidence": [
+      "stayed high for 15 minutes"
+    ],
+    "alt_evidence": [
+      [
+        "alert threshold of 15 minutes"
+      ]
+    ]
+  },
+  {
+    "id": "Q6",
+    "type": "exact term",
+    "question": "What is the lead time for the LX-200 LiDAR module?",
+    "reference": "14 weeks. A buffer order of 25 LX-200 modules was placed in September to cover Q1 2027 builds.",
+    "evidence": [
+      "14-week lead time"
+    ]
+  },
+  {
+    "id": "Q7",
+    "type": "reasoning",
+    "question": "How much of the Kestrel program budget was still unspent after Q3?",
+    "reference": "About $0.7M: the approved FY2026 budget was $3.1M and $2.4M was spent through Q3 (they expect to finish about $150K under budget).",
+    "evidence": [
+      "$3.1M",
+      "$2.4M"
+    ]
+  },
+  {
+    "id": "Q8",
+    "type": "speaker notes only",
+    "question": "Which customer is the November pilot with?",
+    "reference": "Brightwater Utilities, covering 220 pumping stations in two counties.",
+    "evidence": [
+      "Brightwater Utilities"
+    ]
+  },
+  {
+    "id": "Q9",
+    "type": "distractor document",
+    "question": "How many robots were hit by the bad firmware release, and which version were they rolled back to?",
+    "reference": "37 Talon-3 rovers (INC-1983, release 7.4.0) were rolled back to firmware 7.3.2.",
+    "evidence": [
+      "37",
+      "7.3.2"
+    ]
+  },
+  {
+    "id": "Q10",
+    "type": "paraphrase",
+    "question": "What has to happen to battery packs before they can be shipped?",
+    "reference": "They must be discharged to 40 percent state of charge or less; packs above 40 percent may not be shipped at all.",
+    "evidence": [
+      "40 percent"
+    ]
+  },
+  {
+    "id": "Q11",
+    "type": "multi-fact",
+    "question": "Who owns the action item to add automatic gateway failover, and when is it due?",
+    "reference": "Sam Ortiz owns AI-3 (automatic failover from tg-east-2 to tg-east-1), due 2026-10-15, still in progress.",
+    "evidence": [
+      "Sam Ortiz",
+      "2026-10-15"
+    ]
+  },
+  {
+    "id": "Q12",
+    "type": "unanswerable",
+    "question": "What was Halcyon Robotics' total annual revenue last year?",
+    "reference": "The sources do not contain revenue figures; a correct answer says the notebook's sources don't cover it.",
+    "evidence": []
+  }
+]

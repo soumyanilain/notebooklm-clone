@@ -1,0 +1,17 @@
+flowchart LR
+    DEV["Developer<br/>git push main"] --> GH["GitHub repo"]
+    GH --> GA
+
+    subgraph GA["GitHub Actions: deploy.yml"]
+        direction TB
+        T["job: test<br/>pip install, pytest (offline)"] --> B["job: deploy<br/>docker build (cached layers)"]
+        B --> P["push image to<br/>Artifact Registry"]
+        P --> R["gcloud run deploy<br/>new revision"]
+        R --> C["check live URL<br/>expects HTTP 200"]
+    end
+
+    WIF[/"Workload Identity Federation<br/>short-lived token, no JSON key<br/>(GitHub secrets: project, provider, SA)"/] -.-> B
+    R --> RUN(["Cloud Run service<br/>notebooklm-clone<br/>2 GiB, 0-1 instances"])
+    SM[/"Secret Manager<br/>GROQ_API_KEY"/] -. "mounted as env var" .-> RUN
+    RUN --> GROQ[["Groq API"]]
+    USER(["Users"]) --> RUN

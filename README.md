@@ -2,7 +2,7 @@
 
 **Sourcebook** is a full-stack RAG app in the style of Google's NotebookLM. You create notebooks, add PDFs, slide decks, text files or web pages, ask questions and get answers with citations, and generate a report, a quiz with an answer key, or flashcards from the notebook.
 
-- **Live app (Google Cloud Run):** https://notebooklm-clone-XXXXXXXX.us-central1.run.app  <!-- replace with your URL after the first deploy -->
+- **Live app (Google Cloud Run):** https://notebooklm-clone-wbot2pofva-uc.a.run.app (the first visit after a quiet spell can take about 20 seconds while the app wakes up)
 - **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **RAG evaluation:** [docs/RAG_EVALUATION.md](docs/RAG_EVALUATION.md) (raw results in [eval/results/](eval/results/))
 

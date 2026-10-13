@@ -7,7 +7,7 @@
 #
 # It is safe to run more than once. What it does:
 #   1. enables the APIs Cloud Run deployments need
-#   2. creates a Docker repository in Artifact Registry
+#   2. creates a Docker repository in Artifact Registry that keeps only the 2 newest images
 #   3. stores your Groq API key in Secret Manager (you paste it; it is never printed)
 #   4. creates a runtime service account (reads the secret) and a deployer service account
 #   5. sets up Workload Identity Federation so GitHub Actions can deploy WITHOUT a JSON key
@@ -41,6 +41,19 @@ if ! gcloud artifacts repositories describe "${AR_REPO}" --location="${REGION}" 
   gcloud artifacts repositories create "${AR_REPO}" --repository-format=docker --location="${REGION}" \
     --description="Images for the NotebookLM clone"
 fi
+
+echo "==> Cleanup policy: keep only the 2 newest images (stays near the free 0.5 GB of storage)"
+POLICY_FILE="$(mktemp)"
+cat > "${POLICY_FILE}" <<'JSON'
+[
+  {"name": "keep-newest-2", "action": {"type": "Keep"}, "mostRecentVersions": {"keepCount": 2}},
+  {"name": "delete-the-rest", "action": {"type": "Delete"}, "condition": {"tagState": "any", "olderThan": "86400s"}}
+]
+JSON
+gcloud artifacts repositories set-cleanup-policies "${AR_REPO}" --location="${REGION}" \
+  --policy="${POLICY_FILE}" --no-dry-run --quiet >/dev/null \
+  || echo "    (could not set the cleanup policy; old images can be deleted by hand in Artifact Registry)"
+rm -f "${POLICY_FILE}"
 
 echo "==> Service accounts"
 gcloud iam service-accounts describe "${RUNTIME}" >/dev/null 2>&1 || \

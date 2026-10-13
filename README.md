@@ -153,7 +153,7 @@ push → test (pytest, offline) → docker build (cached) → push to Artifact R
 
 A green run means the new revision is serving. The URL is printed in the run summary and on the service page under **Cloud Run → Services → notebooklm-clone**, and stays the same across deploys. The service uses 2 GiB of memory and 1 vCPU, scales to zero when idle (the first request after a while takes about 15–30 s), and is capped at one instance.
 
-**Costs.** At this scale it fits Cloud Run's free tier. Container images in Artifact Registry cost a few cents a month, which the trial credit covers. To be safe, set a budget alert under **Billing → Budgets & alerts**, and delete the project after grading.
+**Costs and keeping it online.** Low traffic fits inside Cloud Run's always-free monthly allowance: 2 million requests, 180,000 vCPU-seconds and 360,000 GB-seconds of memory, which works out to roughly 45–50 hours of active use a month with this service's settings. The service scales to zero, so idle time is free. The setup script keeps only the two newest images, which holds Artifact Registry storage close to its free 0.5 GB. The 90-day free trial only pays for usage beyond those limits. **To keep the app online after the trial, upgrade the billing account to pay-as-you-go before it ends.** The always-free allowance carries on, and the app keeps running. If the trial ends without an upgrade, the service is stopped, and after a 30-day grace period it's deleted. Set a small budget alert under **Billing → Budgets & alerts** to catch any surprise usage. To keep strangers from running up usage, you can also turn on the app's login with `APP_USERNAME`/`APP_PASSWORD`.
 
 ## Tests
 
